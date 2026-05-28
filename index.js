@@ -233,6 +233,12 @@ async function postCocoa(browser, row) {
   const page = await browser.newPage();
   page.setDefaultTimeout(60000);
 
+  // ダイアログ（確認ポップアップ）を自動でOK
+  page.on('dialog', async dialog => {
+    console.log(`ダイアログ: ${dialog.message()}`);
+    await dialog.accept();
+  });
+
   await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 3000));
   console.log(`ページ読み込み完了: ${page.url()}`);
