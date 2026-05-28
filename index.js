@@ -72,6 +72,23 @@ async function postVanilla(browser, row1, row2) {
   await page.goto(VANILLA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 2000));
 
+  // デバッグ：ページの状態確認
+  const pageInfo = await page.evaluate(() => {
+    const selects = document.querySelectorAll('select');
+    const links = document.querySelectorAll('a');
+    return {
+      url: window.location.href,
+      title: document.title,
+      selectCount: selects.length,
+      selectOptions: Array.from(selects).map(s => ({
+        name: s.name,
+        options: Array.from(s.options).map(o => o.text)
+      })),
+      linkTexts: Array.from(links).map(l => l.textContent.trim()).filter(t => t.length > 0 && t.length < 20)
+    };
+  });
+  console.log('ページ情報:', JSON.stringify(pageInfo, null, 2));
+
   // ニックネーム
   await page.evaluate((nick) => {
     const inputs = document.querySelectorAll('input[type="text"]');
@@ -319,32 +336,7 @@ async function postCocoa(browser, row) {
   await new Promise(r => setTimeout(r, 1000));
 
   // 確認するボタン
-  await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"], a');
-    for (const btn of btns) {
-      if (btn.textContent.includes('確認')) {
-        btn.click();
-        return;
-      }
-    }
-  });
-  await new Promise(r => setTimeout(r, 3000));
-
-  // 最終送信ボタン
-  await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"], a');
-    for (const btn of btns) {
-      if (btn.textContent.includes('送信') || btn.textContent.includes('投稿') || btn.textContent.includes('完了')) {
-        btn.click();
-        return;
-      }
-    }
-  });
-  await new Promise(r => setTimeout(r, 3000));
-
-  await markDone(row['_rowIndex']);
-  console.log(`✅ ココア投稿完了: row${row['_rowIndex']}`);
-  await page.close();
+  ac
 }
 
 async function main() {
