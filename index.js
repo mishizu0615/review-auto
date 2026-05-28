@@ -332,10 +332,11 @@ async function postCocoa(browser, row) {
   await new Promise(r => setTimeout(r, 3000));
 
   // 最終送信
+  // 最終送信
   const submitClicked = await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"]');
+    const btns = document.querySelectorAll('button[name="send"], button');
     for (const btn of btns) {
-      if (btn.textContent.includes('送信') || btn.value?.includes('送信')) {
+      if (btn.name === 'send' || btn.textContent.includes('投稿する')) {
         btn.click();
         return true;
       }
