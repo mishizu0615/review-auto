@@ -331,7 +331,23 @@ async function postCocoa(browser, row) {
   console.log(`確認ボタンクリック: ${confirmClicked}`);
   await new Promise(r => setTimeout(r, 3000));
 
-  // 最終送信
+  // 確認するボタン → ページ遷移待ち
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
+    page.evaluate(() => {
+      const btns = document.querySelectorAll('button, input[type="submit"]');
+      for (const btn of btns) {
+        if (btn.textContent.includes('確認') || btn.value?.includes('確認')) {
+          btn.click();
+          return true;
+        }
+      }
+      return false;
+    })
+  ]);
+  console.log(`確認後URL: ${page.url()}`);
+  await new Promise(r => setTimeout(r, 2000));
+
   // 最終送信
   const submitClicked = await page.evaluate(() => {
     const btns = document.querySelectorAll('button[name="send"], button');
