@@ -331,7 +331,10 @@ async function postCocoa(browser, row) {
   console.log(`確認ボタンクリック: ${confirmClicked}`);
   await new Promise(r => setTimeout(r, 3000));
 
-  // 確認するボタン（submitなのでwaitForNavigationと同時に）
+  // 確認するボタンが出るまで待つ
+  await page.waitForSelector('button[name="confirm"]', { timeout: 10000 });
+  console.log('確認ボタン発見');
+
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
     page.click('button[name="confirm"]')
@@ -340,12 +343,9 @@ async function postCocoa(browser, row) {
   await new Promise(r => setTimeout(r, 2000));
 
   // 最終送信
-  const submitClicked = await page.evaluate(() => {
-    const btn = document.querySelector('button[name="send"]');
-    if (btn) { btn.click(); return true; }
-    return false;
-  });
-  console.log(`送信ボタンクリック: ${submitClicked}`);
+  await page.waitForSelector('button[name="send"]', { timeout: 10000 });
+  await page.click('button[name="send"]');
+  console.log('送信ボタンクリック');
   await new Promise(r => setTimeout(r, 3000));
 
   await markDone(row['_rowIndex']);
