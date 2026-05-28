@@ -188,7 +188,7 @@ async function postCocoa(browser, rows) {
       if (btn.textContent.trim().includes(cat)) { btn.click(); break; }
     }
   }, cat1);
-  await page.waitForTimeout(1000);
+  await new Promise(r => setTimeout(r, 1000));
 
   // 評価①＋口コミ①
   const radios1 = await page.$$('input[type="radio"]');
@@ -209,7 +209,7 @@ async function postCocoa(browser, rows) {
       }
     }
   }, cat2);
-  await page.waitForTimeout(1000);
+  await new Promise(r => setTimeout(r, 1000));
 
   // 評価②＋口コミ②
   const radios2 = await page.$$('input[type="radio"]');
