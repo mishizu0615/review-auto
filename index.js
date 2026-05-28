@@ -332,11 +332,35 @@ async function postCocoa(browser, row) {
       textareas[0].dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, row['口コミアイデア']);
-
   await new Promise(r => setTimeout(r, 1000));
 
   // 確認するボタン
-  ac
+  await page.evaluate(() => {
+    const btns = document.querySelectorAll('button, input[type="submit"], a');
+    for (const btn of btns) {
+      if (btn.textContent.includes('確認')) {
+        btn.click();
+        return;
+      }
+    }
+  });
+  await new Promise(r => setTimeout(r, 3000));
+
+  // 最終送信ボタン
+  await page.evaluate(() => {
+    const btns = document.querySelectorAll('button, input[type="submit"], a');
+    for (const btn of btns) {
+      if (btn.textContent.includes('送信') || btn.textContent.includes('投稿') || btn.textContent.includes('完了')) {
+        btn.click();
+        return;
+      }
+    }
+  });
+  await new Promise(r => setTimeout(r, 3000));
+
+  await markDone(row['_rowIndex']);
+  console.log(`✅ ココア投稿完了: row${row['_rowIndex']}`);
+  await page.close();
 }
 
 async function main() {
