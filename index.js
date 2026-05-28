@@ -337,7 +337,7 @@ async function postCocoa(browser, row) {
   // 確認する→確認ページへ遷移
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.$eval('form', form => form.submit())
+    page.$eval('button[name="confirm"]', btn => btn.form.submit())
   ]);
   console.log(`確認後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 2000));
@@ -349,7 +349,7 @@ async function postCocoa(browser, row) {
   // 最終送信
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.$eval('button[name="send"]', btn => btn.click())
+    page.$eval('button[name="send"]', btn => btn.form.submit())
   ]);
   console.log(`送信後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 3000));
