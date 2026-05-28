@@ -334,7 +334,7 @@ async function postCocoa(browser, row) {
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
   
-  // フォームを直接submit
+  // 確認する→確認ページへ遷移
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
     page.$eval('form', form => form.submit())
@@ -342,10 +342,14 @@ async function postCocoa(browser, row) {
   console.log(`確認後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 2000));
 
-  // 最終送信もフォームsubmit
+  // 確認ページで送信ボタンを確認
+  const sendBtnExists = await page.$('button[name="send"]');
+  console.log(`送信ボタン存在: ${!!sendBtnExists}`);
+
+  // 最終送信
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.$eval('form', form => form.submit())
+    page.$eval('button[name="send"]', btn => btn.click())
   ]);
   console.log(`送信後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 3000));
