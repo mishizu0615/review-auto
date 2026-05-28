@@ -323,35 +323,40 @@ async function postCocoa(browser, row) {
   });
   console.log('textarea一覧:', JSON.stringify(taInfo));
 
-  // 良い点テキストエリア
-  await page.evaluate((text) => {
-    const ta = document.querySelector('#good_point');
-    if (ta) {
-      ta.value = text;
-      ta.dispatchEvent(new Event('input', { bubbles: true }));
-      ta.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, row['口コミアイデア']);
-  await new Promise(r => setTimeout(r, 1000));
-
-  // ↓入力確認ログ追加
-  const inputValue = await page.$eval('#good_point', el => el.value);
-  console.log(`テキスト入力確認: ${inputValue.slice(0, 30)}...`);
-  
-  // 確認する
-  await page.$eval('button[name="confirm"]', btn => btn.form.submit());
-  await new Promise(r => setTimeout(r, 5000));
+  // 良い点テキストエリア + 確認ページへ遷移を一括処理
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
+    page.evaluate((text) => {
+      const ta = document.querySelector('#good_point');
+      if (ta) {
+        ta.value = text;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+        ta.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      // 少し待ってからsubmit
+      setTimeout(() => {
+        const btn = document.querySelector('button[name="confirm"]');
+        if (btn) btn.click();
+      }, 500);
+    }, row['口コミアイデア'])
+  ]);
   console.log(`確認後URL: ${page.url()}`);
+  await new Promise(r => setTimeout(r, 2000));
 
-  // ページ内のボタン確認
+  // 確認ページのボタン確認
   const btnsOnConfirm = await page.evaluate(() => {
     return Array.from(document.querySelectorAll('button')).map(b => ({name: b.name, text: b.textContent.trim()}));
   });
   console.log('確認ページボタン:', JSON.stringify(btnsOnConfirm));
 
   // 最終送信
-  await page.$eval('button[name="send"]', btn => btn.form.submit());
-  await new Promise(r => setTimeout(r, 5000));
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
+    page.evaluate(() => {
+      const btn = document.querySelector('button[name="send"]');
+      if (btn) btn.click();
+    })
+  ]);
   console.log(`送信後URL: ${page.url()}`);
 
   await markDone(row['_rowIndex']);
