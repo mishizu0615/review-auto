@@ -323,27 +323,22 @@ async function postCocoa(browser, row) {
   });
   console.log('textarea一覧:', JSON.stringify(taInfo));
 
-  // 良い点テキストエリア + 確認ページへ遷移を一括処理
+  // 良い点テキストエリア（typeで直接入力）
+  await page.focus('#good_point');
+  await page.type('#good_point', row['口コミアイデア'], { delay: 20 });
+  const inputValue = await page.$eval('#good_point', el => el.value);
+  console.log(`テキスト入力確認: ${inputValue.slice(0, 30)}...`);
+  await new Promise(r => setTimeout(r, 1000));
+
+  // 確認するボタン
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.evaluate((text) => {
-      const ta = document.querySelector('#good_point');
-      if (ta) {
-        ta.value = text;
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
-        ta.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      // 少し待ってからsubmit
-      setTimeout(() => {
-        const btn = document.querySelector('button[name="confirm"]');
-        if (btn) btn.click();
-      }, 500);
-    }, row['口コミアイデア'])
+    page.click('button[name="confirm"]')
   ]);
   console.log(`確認後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 2000));
 
-  // 確認ページのボタン確認
+  // 確認ページボタン確認
   const btnsOnConfirm = await page.evaluate(() => {
     return Array.from(document.querySelectorAll('button')).map(b => ({name: b.name, text: b.textContent.trim()}));
   });
@@ -352,10 +347,7 @@ async function postCocoa(browser, row) {
   // 最終送信
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.evaluate(() => {
-      const btn = document.querySelector('button[name="send"]');
-      if (btn) btn.click();
-    })
+    page.click('button[name="send"]')
   ]);
   console.log(`送信後URL: ${page.url()}`);
 
