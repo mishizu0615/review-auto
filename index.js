@@ -6,7 +6,12 @@ const GAS_URL = process.env.GAS_URL;
 const VANILLA_URL = 'https://qzin.jp/form_reviews/?reviews_tenpoid=bisyoujyo&reviews_id=RFVsEd';
 const COCOA_URL = 'https://cocoa-job.jp/reviewform/?k=63666a79476179736159652b75716a7a52692b6d43413d3d&gd=71476669794d38643076735a746232483874386351394332355931342f4f5461514c523761546c2f4855493d';
 
-const NICKNAMES = ['さくら','ひまり','ゆい','あおい','みく','ここ','りん','なな','もも','はな','つき','のの','らら','まい','りか'];
+const NICKNAMES = [
+  'さくら','ひまり','ゆい','あおい','みく','ここ','りん','なな','もも','はな',
+  'つき','のの','らら','まい','りか','ゆな','かな','れな','あや','のあ',
+  'ひな','みお','ゆか','えま','るな','らん','めい','ほの','あん','ねね',
+  'ちか','のぞみ','まな','ゆず','こはる','みはる','あかり','ことね','いろは','ちひろ'
+];
 const VANILLA_AGES = ['20代前半','20代中盤','20代後半','30代前半','30代中盤','30代後半','40代','50代〜','ヒミツ♡'];
 const COCOA_AGES = ['18〜19歳','20〜24歳','25〜29歳','30〜34歳','35〜39歳','40歳以上'];
 const BUSTS = ['Aカップ','Bカップ','Cカップ','Dカップ','Eカップ','Fカップ以上'];
@@ -15,6 +20,7 @@ const EXPERIENCES = ['未経験','経験あり'];
 
 const rand = arr => arr[Math.floor(Math.random() * arr.length)];
 
+// スプシの切り口 → バニラのカテゴリ
 const VANILLA_CATEGORY_MAP = {
   '制度・待遇': '制度/待遇',
   'お客様・客層': 'お客様/客層',
@@ -23,9 +29,10 @@ const VANILLA_CATEGORY_MAP = {
   '求人ページの信頼度': '面接/求人内容の信頼度',
   '稼ぎやすさ': 'お給料',
   'シフト': 'シフト',
-  'スタッフ': 'スタッフ/女の子同士の関係',
+  'スタッフ同士の関係': 'スタッフ/女の子同士の関係',
 };
 
+// スプシの切り口 → ココアのカテゴリ
 const COCOA_CATEGORY_MAP = {
   '制度・待遇': 'お店のサポート',
   'お客様・客層': '客質/客層',
@@ -34,7 +41,7 @@ const COCOA_CATEGORY_MAP = {
   '求人ページの信頼度': '求人ページの信頼度',
   '稼ぎやすさ': '稼ぎやすさ',
   'シフト': '働きやすさ',
-  'スタッフ': 'お店の雰囲気',
+  'スタッフ同士の関係': 'お店の雰囲気',
 };
 
 async function getUnpostedRows() {
@@ -44,21 +51,6 @@ async function getUnpostedRows() {
 
 async function markDone(rowIndex) {
   await axios.get(`${GAS_URL}?action=markDone&row=${rowIndex}`);
-}
-
-async function selectByText(page, selector, text) {
-  await page.evaluate((sel, txt) => {
-    const elements = document.querySelectorAll(sel);
-    for (const el of elements) {
-      for (const opt of el.options) {
-        if (opt.text.includes(txt)) {
-          el.value = opt.value;
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-          return;
-        }
-      }
-    }
-  }, selector, text);
 }
 
 async function clickRadioByIndex(page, index) {
@@ -73,38 +65,65 @@ async function clickRadioByIndex(page, index) {
 }
 
 async function postVanilla(browser, row1, row2) {
+  console.log(`バニラ投稿開始: "${row1['切り口']}" + "${row2['切り口']}"`);
   const page = await browser.newPage();
-  await page.goto(VANILLA_URL, { waitUntil: 'networkidle2' });
+  page.setDefaultTimeout(30000);
+
+  await page.goto(VANILLA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 2000));
 
   // ニックネーム
   await page.evaluate((nick) => {
-    const input = document.querySelector('input[name*="nickname"], input[placeholder*="10文字"]');
-    if (input) { input.value = nick; input.dispatchEvent(new Event('input', { bubbles: true })); }
+    const inputs = document.querySelectorAll('input[type="text"]');
+    for (const input of inputs) {
+      const label = input.closest('tr, div, li')?.textContent || '';
+      if (label.includes('ニック') || input.placeholder?.includes('10文字')) {
+        input.value = nick;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
   }, rand(NICKNAMES));
 
   // 年代
-  await selectByText(page, 'select', rand(VANILLA_AGES));
+  await page.evaluate((age) => {
+    const selects = document.querySelectorAll('select');
+    for (const sel of selects) {
+      for (const opt of sel.options) {
+        if (opt.text.includes(age)) {
+          sel.value = opt.value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+      }
+    }
+  }, rand(VANILLA_AGES));
+
+  await new Promise(r => setTimeout(r, 500));
 
   // カテゴリ①
   const cat1 = VANILLA_CATEGORY_MAP[row1['切り口']] || row1['切り口'];
+  console.log(`カテゴリ①: ${cat1}`);
   await page.evaluate((cat) => {
     const selects = document.querySelectorAll('select');
-    for (let i = 1; i < selects.length; i++) {
-      for (const opt of selects[i].options) {
+    for (const sel of selects) {
+      for (const opt of sel.options) {
         if (opt.text.includes(cat)) {
-          selects[i].value = opt.value;
-          selects[i].dispatchEvent(new Event('change', { bubbles: true }));
+          sel.value = opt.value;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
           return;
         }
       }
     }
   }, cat1);
 
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 1000));
 
-  // 評価アイコン①（0か1をランダム）
+  // 評価アイコン①
   const iconIdx1 = Math.random() < 0.5 ? 0 : 1;
   await clickRadioByIndex(page, iconIdx1);
+  await new Promise(r => setTimeout(r, 500));
 
   // 口コミ①
   await page.evaluate((text) => {
@@ -112,35 +131,43 @@ async function postVanilla(browser, row1, row2) {
     if (textareas[0]) {
       textareas[0].value = text;
       textareas[0].dispatchEvent(new Event('input', { bubbles: true }));
+      textareas[0].dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, row1['口コミアイデア']);
 
-  // カテゴリ②
+  await new Promise(r => setTimeout(r, 500));
+
+  // カテゴリ②（2番目のselectでcat2を選ぶ）
   const cat2 = VANILLA_CATEGORY_MAP[row2['切り口']] || row2['切り口'];
+  console.log(`カテゴリ②: ${cat2}`);
   await page.evaluate((cat) => {
     const selects = document.querySelectorAll('select');
-    let found = 0;
-    for (let i = 1; i < selects.length; i++) {
-      for (const opt of selects[i].options) {
-        if (opt.text.includes(cat)) {
-          if (found === 1) {
-            selects[i].value = opt.value;
-            selects[i].dispatchEvent(new Event('change', { bubbles: true }));
-            return;
+    let catSelectCount = 0;
+    for (const sel of selects) {
+      const hasMatch = Array.from(sel.options).some(opt => opt.text.includes(cat) || opt.text.includes('お給料'));
+      if (hasMatch) {
+        catSelectCount++;
+        if (catSelectCount === 2) {
+          for (const opt of sel.options) {
+            if (opt.text.includes(cat)) {
+              sel.value = opt.value;
+              sel.dispatchEvent(new Event('change', { bubbles: true }));
+              return;
+            }
           }
-          found++;
         }
       }
     }
   }, cat2);
 
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 1000));
 
   // 評価アイコン②
   const radioCount = await page.evaluate(() => document.querySelectorAll('input[type="radio"]').length);
   const offset = Math.floor(radioCount / 2);
   const iconIdx2 = Math.random() < 0.5 ? 0 : 1;
   await clickRadioByIndex(page, offset + iconIdx2);
+  await new Promise(r => setTimeout(r, 500));
 
   // 口コミ②
   await page.evaluate((text) => {
@@ -148,23 +175,32 @@ async function postVanilla(browser, row1, row2) {
     if (textareas[1]) {
       textareas[1].value = text;
       textareas[1].dispatchEvent(new Event('input', { bubbles: true }));
+      textareas[1].dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, row2['口コミアイデア']);
 
-  // 確認画面へ
+  await new Promise(r => setTimeout(r, 1000));
+
+  // 確認画面へボタン
   await page.evaluate(() => {
     const btns = document.querySelectorAll('button, input[type="submit"], a');
     for (const btn of btns) {
-      if (btn.textContent.includes('確認')) { btn.click(); return; }
+      if (btn.textContent.includes('確認')) {
+        btn.click();
+        return;
+      }
     }
   });
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 3000));
 
-  // 送信する
+  // 送信するボタン
   await page.evaluate(() => {
     const btns = document.querySelectorAll('button, input[type="submit"], a');
     for (const btn of btns) {
-      if (btn.textContent.includes('送信')) { btn.click(); return; }
+      if (btn.textContent.includes('送信')) {
+        btn.click();
+        return;
+      }
     }
   });
   await new Promise(r => setTimeout(r, 3000));
@@ -176,50 +212,99 @@ async function postVanilla(browser, row1, row2) {
 }
 
 async function postCocoa(browser, row) {
+  console.log(`ココア投稿開始: "${row['切り口']}"`);
   const page = await browser.newPage();
-  await page.goto(COCOA_URL, { waitUntil: 'networkidle2' });
+  page.setDefaultTimeout(30000);
+
+  await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 2000));
 
   // 年齢
   await page.evaluate((age) => {
     const sel = document.querySelectorAll('select')[0];
+    if (!sel) return;
     for (const opt of sel.options) {
-      if (opt.text.includes(age)) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      if (opt.text.includes(age)) {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
+    // マッチしなければ2番目の選択肢を選ぶ
+    if (sel.options.length > 1) {
+      sel.selectedIndex = 1;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, rand(COCOA_AGES));
 
   // バスト
   await page.evaluate((bust) => {
     const sel = document.querySelectorAll('select')[1];
+    if (!sel) return;
     for (const opt of sel.options) {
-      if (opt.text.includes(bust)) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      if (opt.text.includes(bust)) {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
+    if (sel.options.length > 1) {
+      sel.selectedIndex = 2;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, rand(BUSTS));
 
   // 体型
   await page.evaluate((body) => {
     const sel = document.querySelectorAll('select')[2];
+    if (!sel) return;
     for (const opt of sel.options) {
-      if (opt.text.includes(body)) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      if (opt.text.includes(body)) {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
+    if (sel.options.length > 1) {
+      sel.selectedIndex = 1;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, rand(BODY_TYPES));
 
   // 業界経験
   await page.evaluate((exp) => {
     const sel = document.querySelectorAll('select')[3];
+    if (!sel) return;
     for (const opt of sel.options) {
-      if (opt.text.includes(exp)) { sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true })); return; }
+      if (opt.text.includes(exp)) {
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+    }
+    if (sel.options.length > 1) {
+      sel.selectedIndex = 1;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, rand(EXPERIENCES));
 
-  // カテゴリボタンクリック→別ページに遷移
+  await new Promise(r => setTimeout(r, 1000));
+
+  // カテゴリボタンクリック → 別ページへ遷移
   const cat = COCOA_CATEGORY_MAP[row['切り口']] || row['切り口'];
+  console.log(`ココアカテゴリ: ${cat}`);
   await page.evaluate((cat) => {
     const links = document.querySelectorAll('a');
     for (const link of links) {
-      if (link.textContent.trim().includes(cat)) { link.click(); return; }
+      if (link.textContent.trim().includes(cat)) {
+        link.click();
+        return;
+      }
     }
   }, cat);
-  await page.waitForNavigation({ waitUntil: 'networkidle2' });
+
+  await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+  await new Promise(r => setTimeout(r, 2000));
 
   // 良い点テキストエリア
   await page.evaluate((text) => {
@@ -227,23 +312,32 @@ async function postCocoa(browser, row) {
     if (textareas[0]) {
       textareas[0].value = text;
       textareas[0].dispatchEvent(new Event('input', { bubbles: true }));
+      textareas[0].dispatchEvent(new Event('change', { bubbles: true }));
     }
   }, row['口コミアイデア']);
 
-  // 確認する
+  await new Promise(r => setTimeout(r, 1000));
+
+  // 確認するボタン
   await page.evaluate(() => {
     const btns = document.querySelectorAll('button, input[type="submit"], a');
     for (const btn of btns) {
-      if (btn.textContent.includes('確認')) { btn.click(); return; }
+      if (btn.textContent.includes('確認')) {
+        btn.click();
+        return;
+      }
     }
   });
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 3000));
 
-  // 最終送信
+  // 最終送信ボタン
   await page.evaluate(() => {
     const btns = document.querySelectorAll('button, input[type="submit"], a');
     for (const btn of btns) {
-      if (btn.textContent.includes('送信') || btn.textContent.includes('投稿')) { btn.click(); return; }
+      if (btn.textContent.includes('送信') || btn.textContent.includes('投稿') || btn.textContent.includes('完了')) {
+        btn.click();
+        return;
+      }
     }
   });
   await new Promise(r => setTimeout(r, 3000));
@@ -260,8 +354,11 @@ async function main() {
   const vanillaRows = rows.filter(r => r['サイト'] === 'バニラ');
   const cocoaRows = rows.filter(r => r['サイト'] === 'ココア');
 
+  console.log(`バニラ未投稿: ${vanillaRows.length}件, ココア未投稿: ${cocoaRows.length}件`);
+
   const browser = await puppeteer.launch({
     headless: true,
+    protocolTimeout: 60000,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
