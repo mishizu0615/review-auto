@@ -231,7 +231,20 @@ async function postVanilla(browser, row1, row2) {
 async function postCocoa(browser, row) {
   console.log(`ココア投稿開始: "${row['切り口']}"`);
   const page = await browser.newPage();
-  page.setDefaultTimeout(30000);
+  page.setDefaultTimeout(60000);
+
+  // まずHTTPレスポンスだけ確認
+  try {
+    const response = await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    console.log(`ステータスコード: ${response.status()}`);
+    console.log(`最終URL: ${page.url()}`);
+    const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 200) || 'body取得失敗');
+    console.log(`ページ冒頭: ${bodyText}`);
+  } catch(e) {
+    console.log(`goto失敗: ${e.message}`);
+    await page.close();
+    return;
+  }
 
   await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 2000));
