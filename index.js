@@ -308,7 +308,7 @@ async function postCocoa(browser, row) {
 
   // 良い点テキストエリア
   await page.evaluate((text) => {
-    const ta = document.querySelectorAll('textarea')[0];
+    const ta = document.querySelector('#good_point');
     if (ta) {
       ta.value = text;
       ta.dispatchEvent(new Event('input', { bubbles: true }));
