@@ -333,8 +333,7 @@ async function postCocoa(browser, row) {
     }
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
-
-  // 確認する→送信
+  
   // 確認する→送信
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
@@ -371,8 +370,16 @@ async function main() {
 
   const browser = await puppeteer.launch({
     headless: true,
-    protocolTimeout: 60000,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    protocolTimeout: 120000,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process'
+    ]
   });
 
   // バニラ：2行で1投稿
