@@ -237,34 +237,56 @@ async function postCocoa(browser, row) {
   await new Promise(r => setTimeout(r, 3000));
   console.log(`ページ読み込み完了: ${page.url()}`);
 
-  // 年齢（select[0]）
-  const ageOptions = await page.$$eval('select:nth-of-type(1) option', opts => opts.map(o => o.value).filter(v => v));
-  const ageVal = ageOptions[Math.floor(Math.random() * ageOptions.length)];
+  // 年齢（20代前半か20代中盤をランダム）
+  const ageTarget = Math.random() < 0.5 ? '20代前半' : '20代中盤';
+  const ageVal = await page.$eval('select:nth-of-type(1)', (sel, target) => {
+    for (const opt of sel.options) {
+      if (opt.text.includes(target)) return opt.value;
+    }
+    return sel.options[1]?.value;
+  }, ageTarget);
   await page.select('select:nth-of-type(1)', ageVal);
-  console.log(`年齢選択: ${ageVal}`);
+  console.log(`年齢選択: ${ageTarget}`);
   await new Promise(r => setTimeout(r, 300));
 
-  // バスト（select[1]）
-  const bustOptions = await page.$$eval('select:nth-of-type(2) option', opts => opts.map(o => o.value).filter(v => v));
+  // バスト
+  const bustOptions = await page.$$eval('select', sels => {
+    const sel = sels[1];
+    return sel ? Array.from(sel.options).map(o => o.value).filter(v => v) : [];
+  });
   const bustVal = bustOptions[Math.floor(Math.random() * bustOptions.length)];
-  await page.select('select:nth-of-type(2)', bustVal);
+  await page.evaluate((val) => {
+    const sel = document.querySelectorAll('select')[1];
+    if (sel) { sel.value = val; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  }, bustVal);
   console.log(`バスト選択: ${bustVal}`);
   await new Promise(r => setTimeout(r, 300));
 
-  // 体型（select[2]）
-  const bodyOptions = await page.$$eval('select:nth-of-type(3) option', opts => opts.map(o => o.value).filter(v => v));
+  // 体型
+  const bodyOptions = await page.$$eval('select', sels => {
+    const sel = sels[2];
+    return sel ? Array.from(sel.options).map(o => o.value).filter(v => v) : [];
+  });
   const bodyVal = bodyOptions[Math.floor(Math.random() * bodyOptions.length)];
-  await page.select('select:nth-of-type(3)', bodyVal);
+  await page.evaluate((val) => {
+    const sel = document.querySelectorAll('select')[2];
+    if (sel) { sel.value = val; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  }, bodyVal);
   console.log(`体型選択: ${bodyVal}`);
   await new Promise(r => setTimeout(r, 300));
 
-  // 業界経験（select[3]）
-  const expOptions = await page.$$eval('select:nth-of-type(4) option', opts => opts.map(o => o.value).filter(v => v));
+  // 業界経験
+  const expOptions = await page.$$eval('select', sels => {
+    const sel = sels[3];
+    return sel ? Array.from(sel.options).map(o => o.value).filter(v => v) : [];
+  });
   const expVal = expOptions[Math.floor(Math.random() * expOptions.length)];
-  await page.select('select:nth-of-type(4)', expVal);
+  await page.evaluate((val) => {
+    const sel = document.querySelectorAll('select')[3];
+    if (sel) { sel.value = val; sel.dispatchEvent(new Event('change', { bubbles: true })); }
+  }, expVal);
   console.log(`経験選択: ${expVal}`);
   await new Promise(r => setTimeout(r, 500));
-
   // カテゴリリンクをhrefで直接取得してnavigation
   const cat = COCOA_CATEGORY_MAP[row['切り口']] || row['切り口'];
   console.log(`カテゴリ: ${cat}`);
