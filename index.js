@@ -233,142 +233,95 @@ async function postCocoa(browser, row) {
   const page = await browser.newPage();
   page.setDefaultTimeout(60000);
 
-  // まずHTTPレスポンスだけ確認
-  try {
-    const response = await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    console.log(`ステータスコード: ${response.status()}`);
-    console.log(`最終URL: ${page.url()}`);
-    const bodyText = await page.evaluate(() => document.body?.innerText?.slice(0, 200) || 'body取得失敗');
-    console.log(`ページ冒頭: ${bodyText}`);
-  } catch(e) {
-    console.log(`goto失敗: ${e.message}`);
+  await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await new Promise(r => setTimeout(r, 3000));
+  console.log(`ページ読み込み完了: ${page.url()}`);
+
+  // 年齢（select[0]）
+  const ageOptions = await page.$$eval('select:nth-of-type(1) option', opts => opts.map(o => o.value).filter(v => v));
+  const ageVal = ageOptions[Math.floor(Math.random() * ageOptions.length)];
+  await page.select('select:nth-of-type(1)', ageVal);
+  console.log(`年齢選択: ${ageVal}`);
+  await new Promise(r => setTimeout(r, 300));
+
+  // バスト（select[1]）
+  const bustOptions = await page.$$eval('select:nth-of-type(2) option', opts => opts.map(o => o.value).filter(v => v));
+  const bustVal = bustOptions[Math.floor(Math.random() * bustOptions.length)];
+  await page.select('select:nth-of-type(2)', bustVal);
+  console.log(`バスト選択: ${bustVal}`);
+  await new Promise(r => setTimeout(r, 300));
+
+  // 体型（select[2]）
+  const bodyOptions = await page.$$eval('select:nth-of-type(3) option', opts => opts.map(o => o.value).filter(v => v));
+  const bodyVal = bodyOptions[Math.floor(Math.random() * bodyOptions.length)];
+  await page.select('select:nth-of-type(3)', bodyVal);
+  console.log(`体型選択: ${bodyVal}`);
+  await new Promise(r => setTimeout(r, 300));
+
+  // 業界経験（select[3]）
+  const expOptions = await page.$$eval('select:nth-of-type(4) option', opts => opts.map(o => o.value).filter(v => v));
+  const expVal = expOptions[Math.floor(Math.random() * expOptions.length)];
+  await page.select('select:nth-of-type(4)', expVal);
+  console.log(`経験選択: ${expVal}`);
+  await new Promise(r => setTimeout(r, 500));
+
+  // カテゴリリンクをhrefで直接取得してnavigation
+  const cat = COCOA_CATEGORY_MAP[row['切り口']] || row['切り口'];
+  console.log(`カテゴリ: ${cat}`);
+  const catHref = await page.evaluate((cat) => {
+    const links = document.querySelectorAll('a.js-categorySelectLink');
+    for (const link of links) {
+      if (link.textContent.trim().includes(cat)) {
+        return link.href;
+      }
+    }
+    return null;
+  }, cat);
+
+  if (!catHref) {
+    console.log(`カテゴリリンク見つからず: ${cat}`);
     await page.close();
     return;
   }
+  console.log(`カテゴリURL: ${catHref}`);
 
-  await page.goto(COCOA_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(catHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await new Promise(r => setTimeout(r, 2000));
-
-  // 年齢
-  await page.evaluate((age) => {
-    const sel = document.querySelectorAll('select')[0];
-    if (!sel) return;
-    for (const opt of sel.options) {
-      if (opt.text.includes(age)) {
-        sel.value = opt.value;
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-    }
-    // マッチしなければ2番目の選択肢を選ぶ
-    if (sel.options.length > 1) {
-      sel.selectedIndex = 1;
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, rand(COCOA_AGES));
-
-  // バスト
-  await page.evaluate((bust) => {
-    const sel = document.querySelectorAll('select')[1];
-    if (!sel) return;
-    for (const opt of sel.options) {
-      if (opt.text.includes(bust)) {
-        sel.value = opt.value;
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-    }
-    if (sel.options.length > 1) {
-      sel.selectedIndex = 2;
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, rand(BUSTS));
-
-  // 体型
-  await page.evaluate((body) => {
-    const sel = document.querySelectorAll('select')[2];
-    if (!sel) return;
-    for (const opt of sel.options) {
-      if (opt.text.includes(body)) {
-        sel.value = opt.value;
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-    }
-    if (sel.options.length > 1) {
-      sel.selectedIndex = 1;
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, rand(BODY_TYPES));
-
-  // 業界経験
-  await page.evaluate((exp) => {
-    const sel = document.querySelectorAll('select')[3];
-    if (!sel) return;
-    for (const opt of sel.options) {
-      if (opt.text.includes(exp)) {
-        sel.value = opt.value;
-        sel.dispatchEvent(new Event('change', { bubbles: true }));
-        return;
-      }
-    }
-    if (sel.options.length > 1) {
-      sel.selectedIndex = 1;
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, rand(EXPERIENCES));
-
-  await new Promise(r => setTimeout(r, 1000));
-
-  // カテゴリボタンクリック → 別ページへ遷移
-  const cat = COCOA_CATEGORY_MAP[row['切り口']] || row['切り口'];
-  console.log(`ココアカテゴリ: ${cat}`);
-  await page.evaluate((cat) => {
-    const links = document.querySelectorAll('a');
-    for (const link of links) {
-      if (link.textContent.trim().includes(cat)) {
-        link.click();
-        return;
-      }
-    }
-  }, cat);
-
-  await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
-  await new Promise(r => setTimeout(r, 2000));
+  console.log(`カテゴリページ: ${page.url()}`);
 
   // 良い点テキストエリア
-  await page.evaluate((text) => {
-    const textareas = document.querySelectorAll('textarea');
-    if (textareas[0]) {
-      textareas[0].value = text;
-      textareas[0].dispatchEvent(new Event('input', { bubbles: true }));
-      textareas[0].dispatchEvent(new Event('change', { bubbles: true }));
-    }
-  }, row['口コミアイデア']);
+  const taCount = await page.$$eval('textarea', tas => tas.length);
+  console.log(`textarea数: ${taCount}`);
+  await page.focus('textarea:nth-of-type(1)');
+  await page.type('textarea:nth-of-type(1)', row['口コミアイデア'], { delay: 10 });
   await new Promise(r => setTimeout(r, 1000));
 
   // 確認するボタン
-  await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"], a');
+  const confirmClicked = await page.evaluate(() => {
+    const btns = document.querySelectorAll('button, input[type="submit"]');
     for (const btn of btns) {
-      if (btn.textContent.includes('確認')) {
+      if (btn.textContent.includes('確認') || btn.value?.includes('確認')) {
         btn.click();
-        return;
+        return true;
       }
     }
+    return false;
   });
+  console.log(`確認ボタンクリック: ${confirmClicked}`);
   await new Promise(r => setTimeout(r, 3000));
 
-  // 最終送信ボタン
-  await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"], a');
+  // 最終送信
+  const submitClicked = await page.evaluate(() => {
+    const btns = document.querySelectorAll('button, input[type="submit"]');
     for (const btn of btns) {
-      if (btn.textContent.includes('送信') || btn.textContent.includes('投稿') || btn.textContent.includes('完了')) {
+      if (btn.textContent.includes('送信') || btn.value?.includes('送信')) {
         btn.click();
-        return;
+        return true;
       }
     }
+    return false;
   });
+  console.log(`送信ボタンクリック: ${submitClicked}`);
   await new Promise(r => setTimeout(r, 3000));
 
   await markDone(row['_rowIndex']);
