@@ -344,12 +344,12 @@ async function postCocoa(browser, row) {
   });
   console.log('確認ページボタン:', JSON.stringify(btnsOnConfirm));
 
-  // 最終送信
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.click('button[name="send"]')
-  ]);
+  // 最終送信（ナビゲーション待ちなし）
+  await page.click('button[name="send"]');
+  await new Promise(r => setTimeout(r, 5000));
   console.log(`送信後URL: ${page.url()}`);
+  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 200));
+  console.log(`送信後ページ内容: ${bodyText}`);
 
   await markDone(row['_rowIndex']);
   console.log(`✅ ココア投稿完了: row${row['_rowIndex']}`);
