@@ -333,6 +333,10 @@ async function postCocoa(browser, row) {
     }
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
+
+  // ↓入力確認ログ追加
+  const inputValue = await page.$eval('#good_point', el => el.value);
+  console.log(`テキスト入力確認: ${inputValue.slice(0, 30)}...`);
   
   // 確認する
   await page.$eval('button[name="confirm"]', btn => btn.form.submit());
