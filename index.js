@@ -83,8 +83,13 @@ async function postVanilla(browser, rows) {
 
   // 評価アイコン①（1番目か2番目をランダム）
   const iconIndex1 = Math.random() < 0.5 ? 0 : 1;
-  const radios1 = await page.$$('input[type="radio"]');
-  if (radios1[iconIndex1]) await radios1[iconIndex1].click();
+  await page.evaluate((idx) => {
+    const radios = document.querySelectorAll('input[type="radio"]');
+    if (radios[idx]) {
+      radios[idx].checked = true;
+      radios[idx].dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, iconIndex1);
 
   // 口コミ①
   const textareas = await page.$$('textarea');
@@ -109,9 +114,14 @@ async function postVanilla(browser, rows) {
 
   // 評価アイコン②
   const iconIndex2 = Math.random() < 0.5 ? 0 : 1;
-  const radios2 = await page.$$('input[type="radio"]');
-  const offset = Math.floor(radios2.length / 2);
-  if (radios2[offset + iconIndex2]) await radios2[offset + iconIndex2].click();
+  await page.evaluate((idx) => {
+    const radios = document.querySelectorAll('input[type="radio"]');
+    const offset = Math.floor(radios.length / 2);
+    if (radios[offset + idx]) {
+      radios[offset + idx].checked = true;
+      radios[offset + idx].dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, iconIndex2);
 
   // 口コミ②
   if (textareas[1]) await textareas[1].type(row2['口コミアイデア']);
