@@ -317,6 +317,10 @@ async function postCocoa(browser, row) {
   });
   console.log('ボタン一覧:', JSON.stringify(btnInfo));
 
+  // ↓これを追加
+  const taInfo = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('textarea')).map(t => ({id: t.id, name: t.name}));
+  });
   console.log('textarea一覧:', JSON.stringify(taInfo));
 
   // 良い点テキストエリア
