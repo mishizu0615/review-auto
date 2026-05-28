@@ -288,26 +288,21 @@ async function postCocoa(browser, row) {
   console.log(`経験選択: ${expVal}`);
   await new Promise(r => setTimeout(r, 500));
   // カテゴリリンクをhrefで直接取得してnavigation
+  // カテゴリリンクをクリックして遷移
   const cat = COCOA_CATEGORY_MAP[row['切り口']] || row['切り口'];
   console.log(`カテゴリ: ${cat}`);
-  const catHref = await page.evaluate((cat) => {
+
+  await page.evaluate((cat) => {
     const links = document.querySelectorAll('a.js-categorySelectLink');
     for (const link of links) {
       if (link.textContent.trim().includes(cat)) {
-        return link.href;
+        link.click();
+        return;
       }
     }
-    return null;
   }, cat);
 
-  if (!catHref) {
-    console.log(`カテゴリリンク見つからず: ${cat}`);
-    await page.close();
-    return;
-  }
-  console.log(`カテゴリURL: ${catHref}`);
-
-  await page.goto(catHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
   await new Promise(r => setTimeout(r, 2000));
   console.log(`カテゴリページ: ${page.url()}`);
 
