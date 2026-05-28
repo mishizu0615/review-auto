@@ -302,9 +302,25 @@ async function postCocoa(browser, row) {
     }
   }, cat);
 
-  await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+  // 遷移待ち
+  try {
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 });
+  } catch(e) {
+    console.log(`Navigation失敗: ${e.message}`);
+  }
   await new Promise(r => setTimeout(r, 2000));
-  console.log(`カテゴリページ: ${page.url()}`);
+  console.log(`カテゴリページURL: ${page.url()}`);
+
+  // ページ内のボタン確認
+  const btnInfo = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('button')).map(b => ({name: b.name, text: b.textContent.trim()}));
+  });
+  console.log('ボタン一覧:', JSON.stringify(btnInfo));
+
+  const taInfo = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('textarea')).map(t => ({id: t.id, name: t.name}));
+  });
+  console.log('textarea一覧:', JSON.stringify(taInfo));
 
   // 良い点テキストエリア
   await page.evaluate((text) => {
