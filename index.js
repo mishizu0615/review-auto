@@ -317,9 +317,6 @@ async function postCocoa(browser, row) {
   });
   console.log('ボタン一覧:', JSON.stringify(btnInfo));
 
-  const taInfo = await page.evaluate(() => {
-    return Array.from(document.querySelectorAll('textarea')).map(t => ({id: t.id, name: t.name}));
-  });
   console.log('textarea一覧:', JSON.stringify(taInfo));
 
   // 良い点テキストエリア
@@ -333,24 +330,7 @@ async function postCocoa(browser, row) {
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
 
-  // 確認するボタン
-  const confirmClicked = await page.evaluate(() => {
-    const btns = document.querySelectorAll('button, input[type="submit"]');
-    for (const btn of btns) {
-      if (btn.textContent.includes('確認') || btn.value?.includes('確認')) {
-        btn.click();
-        return true;
-      }
-    }
-    return false;
-  });
-  console.log(`確認ボタンクリック: ${confirmClicked}`);
-  await new Promise(r => setTimeout(r, 3000));
-
-  // 確認するボタンが出るまで待つ
-  await page.waitForSelector('button[name="confirm"]', { timeout: 10000 });
-  console.log('確認ボタン発見');
-
+  // 確認する→送信
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
     page.click('button[name="confirm"]')
