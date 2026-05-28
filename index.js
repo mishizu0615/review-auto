@@ -312,10 +312,14 @@ async function postCocoa(browser, row) {
   console.log(`カテゴリページ: ${page.url()}`);
 
   // 良い点テキストエリア
-  const taCount = await page.$$eval('textarea', tas => tas.length);
-  console.log(`textarea数: ${taCount}`);
-  await page.focus('textarea:nth-of-type(1)');
-  await page.type('textarea:nth-of-type(1)', row['口コミアイデア'], { delay: 10 });
+  await page.evaluate((text) => {
+    const ta = document.querySelectorAll('textarea')[0];
+    if (ta) {
+      ta.value = text;
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      ta.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
 
   // 確認するボタン
