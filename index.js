@@ -233,13 +233,13 @@ async function main() {
   });
 
   // バニラ：2行ずつ処理
-  for (let i = 0; i + 1 < vanillaRows.length; i += 2) {
+  for (let i = 0; i + 1 < vanillaRows.length && i < 2; i += 2) {
     await postVanilla(browser, [vanillaRows[i], vanillaRows[i + 1]]);
     await new Promise(r => setTimeout(r, 3000));
   }
 
   // ココア：2行ずつ処理
-  for (let i = 0; i + 1 < cocoaRows.length; i += 2) {
+  for (let i = 0; i + 1 < cocoaRows.length && i < 2; i += 2) {
     await postCocoa(browser, [cocoaRows[i], cocoaRows[i + 1]]);
     await new Promise(r => setTimeout(r, 3000));
   }
