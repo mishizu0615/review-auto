@@ -334,24 +334,20 @@ async function postCocoa(browser, row) {
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
   
-  // 確認する→送信
+  // フォームを直接submit
   await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
-    page.evaluate(() => {
-      const btn = document.querySelector('button[name="confirm"]');
-      if (btn) btn.click();
-    })
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
+    page.$eval('form', form => form.submit())
   ]);
   console.log(`確認後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 2000));
 
-  // 最終送信
-  await page.waitForSelector('button[name="send"]', { timeout: 10000 });
-  await page.evaluate(() => {
-    const btn = document.querySelector('button[name="send"]');
-    if (btn) btn.click();
-  });
-  console.log('送信ボタンクリック');
+  // 最終送信もフォームsubmit
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
+    page.$eval('form', form => form.submit())
+  ]);
+  console.log(`送信後URL: ${page.url()}`);
   await new Promise(r => setTimeout(r, 3000));
 
   await markDone(row['_rowIndex']);
