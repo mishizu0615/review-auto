@@ -334,25 +334,21 @@ async function postCocoa(browser, row) {
   }, row['口コミアイデア']);
   await new Promise(r => setTimeout(r, 1000));
   
-  // 確認する→確認ページへ遷移
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.$eval('button[name="confirm"]', btn => btn.form.submit())
-  ]);
+  // 確認する
+  await page.$eval('button[name="confirm"]', btn => btn.form.submit());
+  await new Promise(r => setTimeout(r, 5000));
   console.log(`確認後URL: ${page.url()}`);
-  await new Promise(r => setTimeout(r, 2000));
 
-  // 確認ページで送信ボタンを確認
-  const sendBtnExists = await page.$('button[name="send"]');
-  console.log(`送信ボタン存在: ${!!sendBtnExists}`);
+  // ページ内のボタン確認
+  const btnsOnConfirm = await page.evaluate(() => {
+    return Array.from(document.querySelectorAll('button')).map(b => ({name: b.name, text: b.textContent.trim()}));
+  });
+  console.log('確認ページボタン:', JSON.stringify(btnsOnConfirm));
 
   // 最終送信
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }),
-    page.$eval('button[name="send"]', btn => btn.form.submit())
-  ]);
+  await page.$eval('button[name="send"]', btn => btn.form.submit());
+  await new Promise(r => setTimeout(r, 5000));
   console.log(`送信後URL: ${page.url()}`);
-  await new Promise(r => setTimeout(r, 3000));
 
   await markDone(row['_rowIndex']);
   console.log(`✅ ココア投稿完了: row${row['_rowIndex']}`);
